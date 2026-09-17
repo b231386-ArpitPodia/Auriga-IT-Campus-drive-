@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --bg-primary: #090d16;
   --bg-secondary: #0f172a;
@@ -26,7 +30,7 @@
 }
 
 html {
-  font-size: 14px; /* Standard crisp compact scaling */
+  font-size: 14px;
 }
 
 body {
@@ -42,12 +46,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Ensure SVG icons never blow up or get white boxes */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   letter-spacing: -0.01em;
 }
 
-/* Compact Glass Panel */
+/* Glass Panel Style */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(12px);
