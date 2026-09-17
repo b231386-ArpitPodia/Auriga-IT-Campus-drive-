@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DispenseIcon, ShieldCheckIcon, CheckIcon, AlertIcon, PillIcon, ClockIcon, FileTextIcon, RefreshIcon } from '../icons';
+import { DispenseIcon, ShieldCheckIcon, CheckIcon, AlertIcon, PillIcon, FileTextIcon } from '../icons';
 
 export default function DispenseCounter({ medicines, selectedMedicineId, onDispenseSuccess }) {
   const [selectedId, setSelectedId] = useState(selectedMedicineId || '');
@@ -19,12 +19,11 @@ export default function DispenseCounter({ medicines, selectedMedicineId, onDispe
 
   const currentMedicine = medicines.find((m) => m.id === Number(selectedId));
 
-  // Compute live FEFO allocation preview
   const computeAllocationPreview = () => {
     if (!currentMedicine || qty <= 0) return { valid: false, allocations: [], totalAmount: 0 };
 
     const inDateBatches = currentMedicine.batches
-      .filter((b) => b.stock_status !== 'EXPIRED' && b.quantity_in_stock > 0)
+      .filter((b) => b.stock_status !== 'EXPIRED' && b.stock_status !== 'QUARANTINED' && b.quantity_in_stock > 0)
       .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
     let needed = qty;
@@ -38,7 +37,6 @@ export default function DispenseCounter({ medicines, selectedMedicineId, onDispe
       const sub = taken * b.mrp_per_unit_inr;
       totalAmt += sub;
 
-      allocations.append
       allocations.push({
         batch_id: b.id,
         batch_number: b.batch_number,
@@ -97,300 +95,195 @@ export default function DispenseCounter({ medicines, selectedMedicineId, onDispe
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Left Column: Medicine Selection & Dispense Form */}
-        <div className="w-full md:w-1/2 space-y-5">
-          <div className="glass-panel p-6 border-indigo-500/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
-                <DispenseIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">FEFO Dispense Counter</h3>
-                <p className="text-xs text-slate-400">Oldest non-expired batch is auto-selected first</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleDispense} className="space-y-4">
-              {/* Filter / Search Medicine */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Select Medicine
-                </label>
-                <input
-                  type="text"
-                  placeholder="Type to filter medicine list..."
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  className="form-input text-xs mb-2 bg-slate-900/90"
-                />
-
-                <select
-                  value={selectedId}
-                  onChange={(e) => {
-                    setSelectedId(e.target.value);
-                    setError(null);
-                  }}
-                  className="form-input text-sm font-semibold bg-slate-900"
-                >
-                  {filteredMedicines.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.medicine_name} ({m.generic_salt}) — Sellable Stock: {m.sellable_stock} units
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Medicine Card Summary */}
-              {currentMedicine && (
-                <div className="bg-slate-950/80 rounded-xl p-4 border border-white/5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Manufacturer</span>
-                    <span className="text-xs font-semibold text-white">{currentMedicine.manufacturer}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Unit Format</span>
-                    <span className="text-xs font-semibold text-white">{currentMedicine.unit_type}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Schedule H Required</span>
-                    <span
-                      className={`badge text-[10px] ${
-                        currentMedicine.prescription_required_schedule_h ? 'badge-expired' : 'badge-in-stock'
-                      }`}
-                    >
-                      {currentMedicine.prescription_required_schedule_h ? 'Yes (Prescription Req)' : 'No'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                    <span className="text-xs font-semibold text-emerald-400">Total Sellable In-Date Stock</span>
-                    <span className="text-lg font-bold text-emerald-400">
-                      {currentMedicine.sellable_stock} units
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity Input */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Quantity to Dispense
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    max={currentMedicine ? currentMedicine.sellable_stock : 9999}
-                    value={qty}
-                    onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="form-input text-lg font-bold w-32 text-center"
-                  />
-                  <div className="flex gap-2">
-                    {[10, 20, 50, 100].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setQty(preset)}
-                        className="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg"
-                      >
-                        +{preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Error Box */}
-              {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2">
-                  <AlertIcon className="w-5 h-5 shrink-0 text-rose-400" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Action Button */}
-              <button
-                type="submit"
-                disabled={dispensing || !preview.valid || !currentMedicine}
-                className="w-full btn btn-success py-3.5 text-sm font-bold shadow-lg shadow-emerald-600/30"
-              >
-                {dispensing ? (
-                  'Processing FEFO Dispense...'
-                ) : (
-                  <>
-                    <CheckIcon className="w-5 h-5" />
-                    Confirm FEFO Dispense ({qty} Units) — ₹{preview.totalAmount.toFixed(2)}
-                  </>
-                )}
-              </button>
-            </form>
+    <div className="space-y-4 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left Column: Selection & Quantity */}
+        <div className="glass-panel p-4 space-y-3">
+          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+            <DispenseIcon className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white">FEFO Dispense Counter</h3>
           </div>
-        </div>
 
-        {/* Right Column: FEFO Batch Allocation Preview & Active Batch Timeline */}
-        <div className="w-full md:w-1/2 space-y-5">
-          <div className="glass-panel p-6 border-cyan-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400">
-                  <ShieldCheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Live FEFO Batch Allocator</h3>
-                  <p className="text-xs text-slate-400">First Expired, First Out execution simulation</p>
-                </div>
-              </div>
-              <span className="badge badge-in-stock text-[10px]">Real-Time</span>
+          <form onSubmit={handleDispense} className="space-y-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Filter & Select Medicine
+              </label>
+              <input
+                type="text"
+                placeholder="Search medicine..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="form-input text-xs mb-1.5"
+              />
+              <select
+                value={selectedId}
+                onChange={(e) => {
+                  setSelectedId(e.target.value);
+                  setError(null);
+                }}
+                className="form-input text-xs font-semibold bg-slate-900"
+              >
+                {filteredMedicines.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.medicine_name} ({m.generic_salt}) — In-Date Stock: {m.sellable_stock}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {currentMedicine ? (
-              <div className="space-y-4">
-                {/* Allocations Table */}
-                <div className="space-y-2">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Allocated Batch Queue (Oldest First)
-                  </span>
-
-                  {preview.allocations.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-slate-950/60 text-center text-xs text-slate-400">
-                      No stock available for requested quantity.
-                    </div>
-                  ) : (
-                    preview.allocations.map((alloc, i) => (
-                      <div
-                        key={alloc.batch_id}
-                        className="glass-panel p-3.5 bg-slate-950/80 border-indigo-500/30 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center text-xs font-bold border border-indigo-500/40">
-                            #{i + 1}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-bold text-white">
-                                {alloc.batch_number}
-                              </span>
-                              <span
-                                className={`badge text-[9px] py-0 ${
-                                  alloc.days_to_expiry <= 30 ? 'badge-expiring' : 'badge-in-stock'
-                                }`}
-                              >
-                                Exp: {alloc.expiry_date} ({alloc.days_to_expiry}d left)
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-slate-400">
-                              Unit Price: ₹{alloc.unit_price.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-emerald-400">
-                            -{alloc.taken} units
-                          </div>
-                          <div className="text-xs text-slate-400 font-semibold">
-                            Subtotal: ₹{alloc.subtotal.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+            {currentMedicine && (
+              <div className="bg-slate-950 p-2.5 rounded-lg border border-white/5 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Manufacturer:</span>
+                  <span className="font-semibold text-white">{currentMedicine.manufacturer}</span>
                 </div>
-
-                {/* Excluded Expired Batches Safeguard Banner */}
-                {currentMedicine.batches.filter((b) => b.stock_status === 'EXPIRED').length > 0 && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-rose-300 font-semibold">
-                      <AlertIcon className="w-4 h-4 text-rose-400" />
-                      <span>
-                        {currentMedicine.batches.filter((b) => b.stock_status === 'EXPIRED').length} Expired
-                        batch(es) safety-locked & excluded
-                      </span>
-                    </div>
-                    <span className="badge badge-expired text-[9px]">Omitted</span>
-                  </div>
-                )}
-
-                {/* Total Cost Summary */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 to-slate-900 border border-indigo-500/30 flex items-center justify-between">
-                  <span className="text-sm font-bold text-white">Estimated Total Bill</span>
-                  <span className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
-                    ₹{preview.totalAmount.toFixed(2)}
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Prescription Schedule H:</span>
+                  <span className={`badge text-[8px] ${currentMedicine.prescription_required_schedule_h ? 'badge-expired' : 'badge-in-stock'}`}>
+                    {currentMedicine.prescription_required_schedule_h ? 'Prescription Req' : 'No'}
                   </span>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-500 text-sm">
-                Select a medicine to view live FEFO batch queue.
+                <div className="flex justify-between pt-1 border-t border-white/5 font-bold">
+                  <span className="text-emerald-400">Sellable In-Date Stock:</span>
+                  <span className="text-emerald-400">{currentMedicine.sellable_stock} units</span>
+                </div>
               </div>
             )}
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Quantity to Dispense
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max={currentMedicine ? currentMedicine.sellable_stock : 9999}
+                  value={qty}
+                  onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="form-input text-sm font-bold w-24 text-center"
+                />
+                <div className="flex gap-1">
+                  {[10, 20, 50, 100].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setQty(preset)}
+                      className="btn btn-secondary text-xs px-2 py-1 rounded"
+                    >
+                      +{preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-1.5">
+                <AlertIcon className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={dispensing || !preview.valid || !currentMedicine}
+              className="w-full btn btn-success py-2 text-xs font-bold"
+            >
+              {dispensing ? (
+                'Dispensing...'
+              ) : (
+                <>
+                  <CheckIcon className="w-4 h-4" />
+                  Confirm Dispense ({qty} Units) — ₹{preview.totalAmount.toFixed(2)}
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Right Column: Live Batch Allocation Visualizer */}
+        <div className="glass-panel p-4 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheckIcon className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-sm font-bold text-white">Live FEFO Batch Allocator</h3>
+            </div>
+            <span className="badge badge-in-stock text-[8px]">Earliest Expiry First</span>
           </div>
+
+          {currentMedicine ? (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Batch Queue Allocation
+                </span>
+
+                {preview.allocations.length === 0 ? (
+                  <div className="p-3 rounded-lg bg-slate-950 text-center text-xs text-slate-500">
+                    No stock available for requested quantity.
+                  </div>
+                ) : (
+                  preview.allocations.map((alloc, i) => (
+                    <div key={alloc.batch_id} className="p-2.5 rounded-lg bg-slate-950 border border-indigo-500/20 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-indigo-300">{alloc.batch_number}</span>
+                        <span className="text-[10px] text-slate-400 block">Exp: {alloc.expiry_date} ({alloc.days_to_expiry}d left)</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-emerald-400">-{alloc.taken} units</span>
+                        <span className="text-[10px] text-slate-400 block">₹{alloc.subtotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-950 border border-indigo-500/30 flex items-center justify-between text-xs">
+                <span className="font-bold text-white">Total Amount</span>
+                <span className="text-base font-extrabold text-emerald-400">₹{preview.totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-xs text-slate-500">Select medicine to view FEFO breakdown.</div>
+          )}
         </div>
       </div>
 
-      {/* Transaction Receipt Modal */}
+      {/* Printable Receipt Modal */}
       {lastReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-panel max-w-lg w-full p-6 space-y-5 bg-slate-900 border-emerald-500/40 animate-fade-in shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  <CheckIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Dispense Receipt</h3>
-                  <p className="text-xs font-mono text-slate-400">TXN: {lastReceipt.transaction_id}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setLastReceipt(null)}
-                className="text-slate-400 hover:text-white text-lg font-bold p-1"
-              >
-                ✕
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel max-w-sm w-full p-4 space-y-3 bg-slate-900 border-emerald-500/30 animate-fade-in shadow-xl text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white">Dispense Receipt</h3>
+              <button onClick={() => setLastReceipt(null)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Medicine Name:</span>
-                <span className="font-bold text-white">{lastReceipt.medicine_name}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Dispensed Quantity:</span>
-                <span className="font-bold text-emerald-400">{lastReceipt.dispensed_quantity} units</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Timestamp:</span>
-                <span className="font-mono text-slate-400">{new Date(lastReceipt.dispensed_at).toLocaleString()}</span>
-              </div>
-
-              {/* Batches Used Breakdown */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-white/5 space-y-2">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Batches Dispensed (FEFO Allocation)
-                </span>
-                {lastReceipt.allocations.map((alloc) => (
-                  <div key={alloc.batch_id} className="flex justify-between text-xs py-1 border-b border-white/5 last:border-0">
-                    <span className="font-mono text-slate-300 font-semibold">{alloc.batch_number} (Exp: {alloc.expiry_date})</span>
-                    <span className="text-emerald-400 font-bold">{alloc.quantity_taken} units @ ₹{alloc.unit_price} = ₹{alloc.subtotal}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                <span className="text-sm font-bold text-white">Total Amount Paid:</span>
-                <span className="text-2xl font-extrabold text-emerald-400">₹{lastReceipt.total_amount.toFixed(2)}</span>
-              </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between"><span className="text-slate-400">Transaction ID:</span><span className="font-mono font-bold text-indigo-300">{lastReceipt.transaction_id}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Medicine:</span><span className="font-bold text-white">{lastReceipt.medicine_name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Dispensed Quantity:</span><span className="font-bold text-emerald-400">{lastReceipt.dispensed_quantity} units</span></div>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <button onClick={() => window.print()} className="btn btn-secondary flex-1 text-xs">
-                <FileTextIcon className="w-4 h-4" /> Print Receipt
-              </button>
-              <button onClick={() => setLastReceipt(null)} className="btn btn-primary flex-1 text-xs">
-                Done
-              </button>
+            <div className="bg-slate-950 p-2.5 rounded-lg border border-white/5 space-y-1">
+              <span className="text-[9px] font-bold text-slate-400 uppercase block">Allocated Batches</span>
+              {lastReceipt.allocations.map((alloc) => (
+                <div key={alloc.batch_id} className="flex justify-between text-[11px] py-0.5">
+                  <span className="font-mono text-slate-300">{alloc.batch_number}</span>
+                  <span className="text-emerald-400 font-bold">{alloc.quantity_taken} units @ ₹{alloc.unit_price}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between pt-2 border-t border-white/10 font-bold">
+              <span>Total Paid:</span>
+              <span className="text-base text-emerald-400">₹{lastReceipt.total_amount.toFixed(2)}</span>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => window.print()} className="btn btn-secondary flex-1 text-xs py-1.5"><FileTextIcon className="w-3.5 h-3.5" /> Print</button>
+              <button onClick={() => setLastReceipt(null)} className="btn btn-primary flex-1 text-xs py-1.5">Done</button>
             </div>
           </div>
         </div>

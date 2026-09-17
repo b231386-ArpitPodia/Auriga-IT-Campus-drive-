@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PillIcon, SearchIcon, DispenseIcon, AlertIcon, PackageIcon, FileTextIcon, RefreshIcon, ShieldCheckIcon, ClockIcon } from '../icons';
+import { PillIcon, SearchIcon, DispenseIcon, AlertIcon, PackageIcon, FileTextIcon, RefreshIcon, ClockIcon } from '../icons';
 
 export default function Navbar({ activeTab, setActiveTab, onRefresh }) {
   const [clockDate, setClockDate] = useState('');
-  const [advanceDays, setAdvanceDays] = useState(1);
   const [clockLoading, setClockLoading] = useState(false);
   const [showClockModal, setShowClockModal] = useState(false);
   const [clockResult, setClockResult] = useState(null);
@@ -74,28 +73,24 @@ export default function Navbar({ activeTab, setActiveTab, onRefresh }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-slate-900/80 border-b border-white/10 px-4 lg:px-8 py-3.5 transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Brand Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 p-0.5 shadow-lg shadow-indigo-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-cyan-400">
-                <PillIcon className="w-6 h-6" />
-              </div>
+    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-white/10 px-4 py-2.5">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            💊
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-bold text-white tracking-tight">PharmaFEFO</h1>
+              <span className="badge badge-in-stock text-[9px] py-0">v1.0</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-white tracking-tight">PharmaFEFO</h1>
-                <span className="badge badge-in-stock text-[10px] py-0.5">L1-L3 Ready</span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium">Oldest-First & In-Date Inventory System</p>
-            </div>
+            <p className="text-[10px] text-slate-400 font-medium">FEFO Stock & Dispensing</p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -103,43 +98,41 @@ export default function Navbar({ activeTab, setActiveTab, onRefresh }) {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        {/* Right Actions: Clock Simulator & Outbox */}
-        <div className="flex items-center gap-2.5">
-          {/* Simulated System Date Badge / Trigger */}
+        {/* Controls */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowClockModal(true)}
-            className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-xl font-medium hover:bg-amber-500/20"
-            title="System Clock & Automation Job (POST /clock)"
+            className="flex items-center gap-1 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg font-medium hover:bg-amber-500/20"
+            title="Clock & Automation Simulator"
           >
             <ClockIcon className="w-3.5 h-3.5 text-amber-400" />
-            <span>Sim Date: {clockDate || 'Today'}</span>
+            <span className="hidden sm:inline">Sim:</span> {clockDate || 'Today'}
           </button>
 
-          {/* Outbox Badge Trigger */}
           <button
             onClick={() => {
               fetchOutbox();
               setShowOutboxModal(true);
             }}
-            className="relative p-2 rounded-xl bg-slate-800 text-cyan-400 border border-white/10 hover:bg-slate-700"
-            title="Notification Outbox (GET /outbox)"
+            className="relative p-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-white/10 hover:bg-slate-700"
+            title="Notification Outbox"
           >
-            <FileTextIcon className="w-4 h-4" />
+            <FileTextIcon className="w-3.5 h-3.5" />
             {outbox.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-bold flex items-center justify-center">
                 {outbox.length}
               </span>
             )}
@@ -147,7 +140,7 @@ export default function Navbar({ activeTab, setActiveTab, onRefresh }) {
 
           <button
             onClick={onRefresh}
-            className="btn btn-secondary text-xs py-1.5 px-2.5 rounded-xl"
+            className="btn btn-secondary text-xs py-1 px-2 rounded-lg"
             title="Refresh Data"
           >
             <RefreshIcon className="w-3.5 h-3.5" />
@@ -155,117 +148,91 @@ export default function Navbar({ activeTab, setActiveTab, onRefresh }) {
         </div>
       </div>
 
-      {/* Clock Simulation Modal (Level 1 — T2) */}
+      {/* Clock Simulation Modal */}
       {showClockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-panel max-w-md w-full p-6 space-y-4 bg-slate-900 border-amber-500/40 animate-fade-in shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <ClockIcon className="w-5 h-5 text-amber-400" />
-                <h3 className="text-lg font-bold text-white">System Clock & Daily Automation</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel max-w-sm w-full p-4 space-y-3 bg-slate-900 border-amber-500/30 animate-fade-in shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-1.5">
+                <ClockIcon className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-white">System Clock Simulator</h3>
               </div>
-              <button onClick={() => setShowClockModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowClockModal(false)} className="text-slate-400 hover:text-white text-xs">
                 ✕
               </button>
             </div>
 
             <p className="text-xs text-slate-400">
-              Advance system time to trigger the daily automation job. It flags batches expiring within 7 days and auto-quarantines expired ones (`quantity_in_stock = 0`). Graded via <code className="text-amber-300">POST /clock</code>.
+              Advance system date to test automated 7-day warning flags and expired batch auto-quarantine.
             </p>
 
-            <div className="bg-slate-950 p-3 rounded-xl border border-white/5 space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Current Simulated Date:</span>
-                <span className="font-bold text-amber-400">{clockDate}</span>
-              </div>
+            <div className="bg-slate-950 p-2.5 rounded-lg border border-white/5 flex justify-between text-xs">
+              <span className="text-slate-400">Current Simulated Date:</span>
+              <span className="font-bold text-amber-400">{clockDate}</span>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400 uppercase">Advance Time</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleAdvanceClock(1)}
-                  disabled={clockLoading}
-                  className="btn btn-secondary text-xs py-2"
-                >
-                  +1 Day
-                </button>
-                <button
-                  onClick={() => handleAdvanceClock(7)}
-                  disabled={clockLoading}
-                  className="btn btn-secondary text-xs py-2"
-                >
-                  +7 Days
-                </button>
-                <button
-                  onClick={() => handleAdvanceClock(30)}
-                  disabled={clockLoading}
-                  className="btn btn-secondary text-xs py-2"
-                >
-                  +30 Days
-                </button>
-              </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => handleAdvanceClock(1)} disabled={clockLoading} className="btn btn-secondary text-xs py-1.5">
+                +1 Day
+              </button>
+              <button onClick={() => handleAdvanceClock(7)} disabled={clockLoading} className="btn btn-secondary text-xs py-1.5">
+                +7 Days
+              </button>
+              <button onClick={() => handleAdvanceClock(30)} disabled={clockLoading} className="btn btn-secondary text-xs py-1.5">
+                +30 Days
+              </button>
             </div>
 
             {clockResult && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1 text-xs">
-                <span className="font-bold text-amber-400 block">Automation Job Report:</span>
-                <p className="text-slate-300">• Flagged Expiring Soon (≤7d): <strong className="text-white">{clockResult.flagged_expiring_soon}</strong></p>
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs space-y-1">
+                <span className="font-bold text-amber-400 block">Automation Report:</span>
+                <p className="text-slate-300">• Flagged Expiring Soon (≤7d): <strong>{clockResult.flagged_expiring_soon}</strong></p>
                 <p className="text-slate-300">• Auto-Quarantined Expired: <strong className="text-rose-400">{clockResult.quarantined_expired}</strong></p>
               </div>
             )}
 
-            <button onClick={() => setShowClockModal(false)} className="w-full btn btn-primary text-xs py-2">
-              Close Clock Simulator
+            <button onClick={() => setShowClockModal(false)} className="w-full btn btn-primary text-xs py-1.5">
+              Done
             </button>
           </div>
         </div>
       )}
 
-      {/* Outbox Drawer Modal (Level 3 — T1) */}
+      {/* Outbox Drawer Modal */}
       {showOutboxModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-panel max-w-lg w-full p-6 space-y-4 bg-slate-900 border-cyan-500/40 animate-fade-in shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <FileTextIcon className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-bold text-white">Notification Outbox (Re-Order Alerts)</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel max-w-md w-full p-4 space-y-3 bg-slate-900 border-cyan-500/30 animate-fade-in shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-1.5">
+                <FileTextIcon className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-sm font-bold text-white">Re-Order Notification Outbox</h3>
               </div>
-              <button onClick={() => setShowOutboxModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowOutboxModal(false)} className="text-slate-400 hover:text-white text-xs">
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
-              Automated outbox notifications sent when in-date sellable stock for a medicine drops below threshold. Graded via <code className="text-cyan-300">GET /outbox</code>.
-            </p>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+            <div className="max-h-52 overflow-y-auto space-y-2 pr-1">
               {outbox.length === 0 ? (
-                <div className="text-center py-6 text-xs text-slate-500">
-                  No pending re-order alerts in outbox.
-                </div>
+                <div className="text-center py-6 text-xs text-slate-500">No pending outbox alerts.</div>
               ) : (
                 outbox.map((item) => (
-                  <div key={item.id} className="p-3 rounded-xl bg-slate-950 border border-cyan-500/20 text-xs space-y-1">
+                  <div key={item.id} className="p-2.5 rounded-lg bg-slate-950 border border-cyan-500/20 text-xs space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-cyan-400">{item.medicine_name}</span>
-                      <span className="badge text-[9px] bg-cyan-500/20 text-cyan-300">{item.status}</span>
+                      <span className="badge text-[8px] bg-cyan-500/20 text-cyan-300">{item.status}</span>
                     </div>
                     <p className="text-slate-300">{item.message}</p>
-                    <span className="text-[10px] text-slate-500 font-mono block">
-                      {new Date(item.created_at).toLocaleString()}
-                    </span>
                   </div>
                 ))
               )}
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <button onClick={handleClearOutbox} className="btn btn-danger text-xs flex-1">
-                Clear Outbox
+            <div className="flex gap-2 pt-1">
+              <button onClick={handleClearOutbox} className="btn btn-danger text-xs flex-1 py-1.5">
+                Clear
               </button>
-              <button onClick={() => setShowOutboxModal(false)} className="btn btn-secondary text-xs flex-1">
+              <button onClick={() => setShowOutboxModal(false)} className="btn btn-secondary text-xs flex-1 py-1.5">
                 Close
               </button>
             </div>
