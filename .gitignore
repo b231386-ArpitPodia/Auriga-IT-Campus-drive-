@@ -1,0 +1,19 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# SQLite Database (Auto-seeded on startup from dataset)
+pharma_fefo.db
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
